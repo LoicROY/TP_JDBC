@@ -17,6 +17,7 @@ public class ArticleDaoJdbc implements ArticleDao {
     private static final String DESIGNATION_COL = "DESIGNATION";
     private static final String PRIX_COL = "PRIX";
     private static final String ID_FOURNISSEUR_COL = "ID_FOU";
+    private static final String ALIAS_AVG_PRICE = "AVERAGE_PRICE";
 
     private static final String TABLE_NAME = "article";
 
@@ -38,6 +39,9 @@ public class ArticleDaoJdbc implements ArticleDao {
 
     private static final String SELECT_BY_DESIGNATION = String.format(
             "SELECT * FROM %s WHERE %s LIKE ?;", TABLE_NAME, DESIGNATION_COL);
+
+    private static final String AVG_PRICE = String.format(
+            "SELECT AVG(%s) %s FROM %s;", PRIX_COL, ALIAS_AVG_PRICE, TABLE_NAME);
 
     private FournisseurDao fournisseurDao = DaoFactory.getFournisseurDaoJdbc();
 
@@ -97,7 +101,7 @@ public class ArticleDaoJdbc implements ArticleDao {
             pst.executeUpdate();
 
             ResultSet rs = pst.getGeneratedKeys();
-            while (rs.next()) {
+            if (rs.next()) {
                 article.setId(rs.getInt(1));
             }
             return article;
@@ -173,6 +177,23 @@ public class ArticleDaoJdbc implements ArticleDao {
                 articles.add(article);
             }
             return articles;
+
+        } catch (Exception e) {
+            throw new DaoException(e.getMessage());
+        }
+    }
+
+    @Override
+    public float getAveragePrice() throws DaoException {
+        Connection connection = ConnectionService.getInstance().getConnection();
+        try (Statement st = connection.createStatement()) {
+            ResultSet rs = st.executeQuery(AVG_PRICE);;
+
+            float averagePrice = 0f;
+            if (rs.next()) {
+                averagePrice = rs.getFloat(ALIAS_AVG_PRICE);
+            }
+            return averagePrice;
 
         } catch (Exception e) {
             throw new DaoException(e.getMessage());

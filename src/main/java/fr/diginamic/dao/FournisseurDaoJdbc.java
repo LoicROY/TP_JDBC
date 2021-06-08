@@ -1,5 +1,6 @@
 package fr.diginamic.dao;
 
+import fr.diginamic.bo.Article;
 import fr.diginamic.bo.Fournisseur;
 
 import java.sql.Connection;
@@ -31,6 +32,9 @@ public class FournisseurDaoJdbc implements FournisseurDao {
 
     private static final String DELETE = String.format(
             "DELETE FROM %s WHERE id=?;", TABLE_NAME);
+
+    private static final String SELECT_BY_DESIGNATION = String.format(
+            "SELECT * FROM %s WHERE %s LIKE ?;", TABLE_NAME, NOM_COL);
 
     @Override
     public List<Fournisseur> select() throws DaoException {
@@ -111,6 +115,49 @@ public class FournisseurDaoJdbc implements FournisseurDao {
         } catch (Exception e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    @Override
+    public List<Fournisseur> selectByDesignation(String string) throws DaoException {
+        Connection connection = ConnectionService.getInstance().getConnection();
+        try (PreparedStatement pst = connection.prepareStatement(SELECT_BY_DESIGNATION)) {
+            pst.setString(1, "%" + string + "%");
+            ResultSet rs = pst.executeQuery();
+
+            List<Fournisseur> fournisseurs = new ArrayList<>();
+
+            while (rs.next()) {
+                Fournisseur fournisseur = new Fournisseur();
+                fournisseur.setId(rs.getInt(ID_COL));
+                fournisseur.setNom(rs.getString(NOM_COL));
+
+                fournisseurs.add(fournisseur);
+            }
+            return fournisseurs;
+
+        } catch (Exception e) {
+            throw new DaoException(e.getMessage());
+        }
+    }
+
+    @Override
+    public Fournisseur selectByExactDesignation(String string) throws DaoException {
+        Connection connection = ConnectionService.getInstance().getConnection();
+        try (PreparedStatement pst = connection.prepareStatement(SELECT_BY_DESIGNATION)) {
+            pst.setString(1, string);
+            ResultSet rs = pst.executeQuery();
+
+            Fournisseur fournisseur = new Fournisseur();
+
+            if (rs.next()) {
+                fournisseur.setId(rs.getInt(ID_COL));
+                fournisseur.setNom(rs.getString(NOM_COL));
+            }
+            return fournisseur;
+
+        } catch (Exception e) {
+            throw new DaoException(e.getMessage());
         }
     }
 
